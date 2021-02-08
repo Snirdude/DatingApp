@@ -1,7 +1,7 @@
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
-using API.Data;
 using API.DTOs;
 using API.Entities;
 using API.Interfaces;
@@ -12,12 +12,12 @@ namespace API.Controllers
 {
     public class AccountController : BaseApiController
     {
-        private readonly DataContext _context;
         private readonly ITokenService _tokenService;
-        public AccountController(DataContext context, ITokenService tokenService)
+        private readonly IUserRepository _userRespository;
+        public AccountController(IUserRepository userRespository, ITokenService tokenService)
         {
+            _userRespository = userRespository;
             _tokenService = tokenService;
-            _context = context;
         }
 
         [HttpPost("register")]
@@ -34,8 +34,7 @@ namespace API.Controllers
                 PasswordSalt = hmac.Key
             };
 
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
+            await _userRespository.AddUserAsync(user);
 
             return new UserDto
             {
@@ -47,7 +46,7 @@ namespace API.Controllers
         [HttpPost("login")]
         public async Task<ActionResult<UserDto>> Login(LoginDto loginDto)
         {
-            var user = await _context.Users.SingleOrDefaultAsync(x => x.UserName == loginDto.Username.ToLower());
+            var user = await _userRespository.GetUserByUsernameAsync(loginDto.Username);
 
             if (user == null) return Unauthorized("Invalid username");
 
@@ -63,13 +62,14 @@ namespace API.Controllers
             return new UserDto
             {
                 Username = user.UserName,
-                Token = _tokenService.CreateToken(user)
+                Token = _tokenService.CreateToken(user),
+                PhotoUrl = user.Photos.FirstOrDefault(x => x.IsMain)?.Url
             };
         }
 
         private async Task<bool> UserExists(string username)
         {
-            return await _context.Users.AnyAsync(x => x.UserName == username.ToLower());
+            return await _userRespository.GetUserByUsernameAsync(username) != null;
         }
     }
 }
