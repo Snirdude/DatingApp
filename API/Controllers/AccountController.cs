@@ -15,16 +15,16 @@ namespace API.Controllers
     public class AccountController : BaseApiController
     {
         private readonly ITokenService _tokenService;
-        private readonly IUserRepository _userRespository;
         private readonly IMapper _mapper;
         private readonly UserManager<AppUser> _userManager;
         private readonly SignInManager<AppUser> _signInManager;
-        public AccountController(IUserRepository userRespository, UserManager<AppUser> userManager, SignInManager<AppUser> signInManager, ITokenService tokenService, IMapper mapper)
+        private readonly IUnitOfWork _unitOfWork;
+        public AccountController(IUnitOfWork unitOfWork, UserManager<AppUser> userManager, SignInManager<AppUser> signInManager, ITokenService tokenService, IMapper mapper)
         {
+            _unitOfWork = unitOfWork;
             _signInManager = signInManager;
             _userManager = userManager;
             _mapper = mapper;
-            _userRespository = userRespository;
             _tokenService = tokenService;
         }
 
